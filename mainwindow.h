@@ -36,6 +36,7 @@ private:
     cv::VideoCapture cam;
     cv::VideoCapture cam2;
     int rowDiff = 0;
+    bool diffSet = false;
 
 };
 
