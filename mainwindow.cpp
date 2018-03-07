@@ -7,8 +7,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    cam=cv::VideoCapture(0);
-    cam2=cv::VideoCapture(1);
+    cam=cv::VideoCapture(1);
+    cam2=cv::VideoCapture(2);
+    cam.set(CV_CAP_PROP_FRAME_HEIGHT, 240);
+    cam.set(CV_CAP_PROP_FRAME_WIDTH, 320);
+    cam2.set(CV_CAP_PROP_FRAME_HEIGHT, 240);
+    cam2.set(CV_CAP_PROP_FRAME_WIDTH, 320);
 
     QTimer *qTimer=new QTimer(this);
     connect(qTimer,SIGNAL(timeout()),this,SLOT(displayFrame()));
@@ -47,23 +51,28 @@ void MainWindow::displayFrame() {
             for (int col = 0; col < left.cols-PATCH_WIDTH; col+=PATCH_WIDTH) {
                 int bestMatchRight = findBestMatch(left, right, col, row, PATCH_WIDTH, PATCH_HEIGHT);
                 int colDiff = bestMatchRight - col;
-                if (colDiff > maxDistance) maxDistance = colDiff;
+
+                if (colDiff *colDiff > maxDistance) maxDistance = colDiff * colDiff;
+
                 for (int patchRow=0; patchRow<PATCH_HEIGHT; patchRow++)
-                    for (int patchCol = 0; patchCol<PATCH_HEIGHT; patchCol++)
+                    for (int patchCol = 0; patchCol<PATCH_WIDTH; patchCol++){
                         if (bestMatchRight != -1)
-                            disparityMap[patchRow][patchCol] = colDiff;
+                            disparityMap[row+ patchRow][col + patchCol] = colDiff;
                         else
-                            disparityMap[patchRow][patchCol] = INT_MAX;
+                            disparityMap[row+ patchRow][col + patchCol] = 0;
+                    }
             }
         }
 
-        maxDistance = maxDistance * maxDistance;
 
         Mat disparityView = Mat(left.rows,left.cols,left.type());
         for (int row = 0; row < disparityView.rows; row++) {
             Vec3b* pixel = disparityView.ptr<Vec3b>(row);
             for (int col = 0; col < disparityView.cols; col++) {
-                int normalizedDiff = ((double)((disparityMap[row][col])*(disparityMap[row][col])) / maxDistance) * 255;
+                int normalizedDiff = (((disparityMap[row][col])*(disparityMap[row][col]) * 255) /maxDistance);
+                if(normalizedDiff > 255 || normalizedDiff <0)
+                printf("%d \t %d \t %d \t %d \n", row, col, disparityMap[row][col], normalizedDiff);
+
                 pixel[0] = normalizedDiff;
                 pixel[1] = 0;
                 pixel[2] = 0;
@@ -107,7 +116,7 @@ int MainWindow::findBestMatch(Mat& orig, Mat& other, int startX, int startY, int
 
     int otherRow = startY + rowDiff;
     if (otherRow + patchHeight > other.rows - 1 || otherRow < 0) return -1;
-    for (int col = 0; col < other.cols - patchWidth; col++) {
+    for (int col = 0; col < startX; col++) {
         int squareDiff = sumSquareDiff(orig, other, startX, startY, col, otherRow, patchWidth, patchHeight);
         if (squareDiff < minSquareDiff || minSquareDiff == -1) {
             minSquareDiff = squareDiff;
