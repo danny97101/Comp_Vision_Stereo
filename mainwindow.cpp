@@ -9,10 +9,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     cam=cv::VideoCapture(1);
     cam2=cv::VideoCapture(2);
-    cam.set(CV_CAP_PROP_FRAME_HEIGHT, 240);
-    cam.set(CV_CAP_PROP_FRAME_WIDTH, 320);
-    cam2.set(CV_CAP_PROP_FRAME_HEIGHT, 240);
-    cam2.set(CV_CAP_PROP_FRAME_WIDTH, 320);
+    cam.set(CV_CAP_PROP_FRAME_HEIGHT, 120);
+    cam.set(CV_CAP_PROP_FRAME_WIDTH, 180);
+    cam2.set(CV_CAP_PROP_FRAME_HEIGHT, 120);
+    cam2.set(CV_CAP_PROP_FRAME_WIDTH, 180);
 
     QTimer *qTimer=new QTimer(this);
     connect(qTimer,SIGNAL(timeout()),this,SLOT(displayFrame()));
@@ -52,6 +52,7 @@ void MainWindow::displayFrame() {
                 int bestMatchRight = findBestMatch(left, right, col, row, PATCH_WIDTH, PATCH_HEIGHT);
                 int colDiff = bestMatchRight - col;
 
+                printf("%d \t %d \t %d \n",col, bestMatchRight, colDiff);
                 if (colDiff *colDiff > maxDistance) maxDistance = colDiff * colDiff;
 
                 for (int patchRow=0; patchRow<PATCH_HEIGHT; patchRow++)
@@ -70,8 +71,8 @@ void MainWindow::displayFrame() {
             Vec3b* pixel = disparityView.ptr<Vec3b>(row);
             for (int col = 0; col < disparityView.cols; col++) {
                 int normalizedDiff = (((disparityMap[row][col])*(disparityMap[row][col]) * 255) /maxDistance);
-                if(normalizedDiff > 255 || normalizedDiff <0)
-                printf("%d \t %d \t %d \t %d \n", row, col, disparityMap[row][col], normalizedDiff);
+//                if(normalizedDiff > 255 || normalizedDiff <0)
+//                printf("%d \t %d \t %d \t %d \n", row, col, disparityMap[row][col], normalizedDiff);
 
                 pixel[0] = normalizedDiff;
                 pixel[1] = 0;
@@ -88,22 +89,24 @@ void MainWindow::displayFrame() {
 
 void MainWindow::on_pushButton_clicked()
 {
+    int blackValue = 50;
     int leftRow = -1;
     int rightRow = -1;
     for (int row = 0; row < left.rows; row++) {
         if (leftRow == -1) {
             cv::Vec3b pixel = left.at<Vec3b>(row, 0);
-            if (pixel[0] < 50 && pixel[1] < 50 && pixel[2] < 50)
+            if (pixel[0] < blackValue && pixel[1] < blackValue && pixel[2] < blackValue)
                 leftRow = row;
         }
         if (rightRow == -1) {
             cv::Vec3b pixel = right.at<Vec3b>(row, 0);
-            if (pixel[0] < 50 && pixel[1] < 50 && pixel[2] < 50)
+            if (pixel[0] < blackValue && pixel[1] < blackValue && pixel[2] < blackValue)
                 rightRow = row;
         }
     }
 
     rowDiff = rightRow - leftRow;
+//    printf("%d \t %d \t  %d \t jhkk \n", rowDiff, leftRow, rightRow);
     diffSet = true;
 }
 
@@ -128,15 +131,25 @@ int MainWindow::findBestMatch(Mat& orig, Mat& other, int startX, int startY, int
 }
 
 int MainWindow::sumSquareDiff(Mat& orig, Mat& other, int origX, int origY, int otherX, int otherY, int patchWidth, int patchHeight) {
-    int sum = 0;
-    for (int row = 0; row < patchHeight; row++) {
-        for (int col = 0; col < patchWidth; col++) {
-            Vec3b origPixel = orig.at<Vec3b>(origY + row, origX + col);
-            Vec3b otherPixel = other.at<Vec3b>(otherY + row, otherX + col);
-            for (int color = 0; color < 3; color++) {
-                sum += (origPixel[color] - otherPixel[color]) * (origPixel[color] - otherPixel[color]);
-            }
-        }
-    }
-    return sum;
+
+    //get S.D of orig patch
+    //if that S.D is less than threshold, skip return orig pixel
+    //else loop through search row on other image
+    //for each patch in that row calc the score
+    //return index of patch and
+    // 1 = perfect match, -1 invert
+
+
+
+//    int sum = 0;
+//    for (int row = 0; row < patchHeight; row++) {
+//        for (int col = 0; col < patchWidth; col++) {
+//            Vec3b origPixel = orig.at<Vec3b>(origY + row, origX + col);
+//            Vec3b otherPixel = other.at<Vec3b>(otherY + row, otherX + col);
+//            for (int color = 0; color < 3; color++) {
+//                sum += (origPixel[color] - otherPixel[color]) * (origPixel[color] - otherPixel[color]);
+//            }
+//        }
+//    }
+//    return sum;
 }
