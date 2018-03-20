@@ -3,6 +3,7 @@
 
 #include <opencv/cv.hpp>
 #include <opencv/highgui.h>
+#include <math.h>
 
 
 #include <QLabel>
@@ -22,7 +23,7 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
     int findBestMatch(Mat& orig, Mat& other, int startX, int startY, int patchWidth, int patchHeight);
-    int sumSquareDiff(Mat& orig, Mat& other, int origX, int origY, int otherX, int otherY, int patchWidth, int patchHeight);
+    int sumSquareDiff(Mat& orig, Mat& other, int origX, int origY, int otherX, int otherY, int patchWidth, int patchHeight, double origStdDev, double origAvg);
 
 private slots:
     void displayFrame();
